@@ -8,6 +8,13 @@ pub enum ContractError {
 
     #[error("Unauthorized")]
     Unauthorized {},
-    // Add any other custom errors you like here.
-    // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
+
+    #[error("Start time must be less than end time")]
+    InvalidTime {},
+
+    #[error("Starting price must be less than or equal to lowest price")]
+    InvalidPrice {},
+
+    #[error("Offered asset cant be the same as expected denom")]
+    InvalidDenom {},
 }
