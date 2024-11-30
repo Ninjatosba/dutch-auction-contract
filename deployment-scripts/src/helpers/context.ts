@@ -7,7 +7,7 @@ import _ from 'lodash'
 import path from 'path'
 import { logger } from '../utils/logger'
 import { Coin, DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
-import { nanoToDate, nanoToReadableDate } from '../utils/datetime.ts'
+import { InstantiateMsg as DutchAuctionLaunchpadInstantiateMsg } from '../types/DutchAuctionLaunchpad.types';
 export const CONTRACT_MAP = {
     DUTCH_AUCTION_LAUNCHPAD: 'dutch_auction_launchpad',
 }
@@ -127,6 +127,21 @@ export default class Context {
             console.log(`error ${contractKey} ${index} ${JSON.stringify(this.contracts)}}`)
         }
         return this.contracts[contractKey][index]
+    }
+
+    instantiateDutchAuctionLaunchpad = async () => {
+        let { client, address: sender } = this.getTestUser('admin')
+        let codeId = this.getCodeId(CONTRACT_MAP.DUTCH_AUCTION_LAUNCHPAD)
+        let initMsg: DutchAuctionLaunchpadInstantiateMsg = {
+            accepted_denoms: [chainConfig.denom],
+            admin: sender,
+            auction_creation_fee: { denom: chainConfig.denom, amount: '1000000' },
+            max_aution_duration: 86400,
+            min_seconds_until_auction_start: 86400
+        }
+        let res = await client.instantiate(sender, codeId, initMsg, "test_dutch_auction", "auto")
+        logger.log(1, `Instantiated ${CONTRACT_MAP.DUTCH_AUCTION_LAUNCHPAD} contract with address ${res.contractAddress}`)
+        logger.log(1, `Tx Hash: ${res.transactionHash}`)
     }
 
     addContractAddress = (contractKey: string, contractAddress: string) => {
