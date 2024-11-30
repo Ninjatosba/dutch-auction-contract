@@ -136,7 +136,7 @@ export default class Context {
             accepted_denoms: [chainConfig.denom],
             admin: sender,
             auction_creation_fee: { denom: chainConfig.denom, amount: '1000000' },
-            max_aution_duration: 86400,
+            max_auction_duration: 86400,
             min_seconds_until_auction_start: 86400
         }
         let res = await client.instantiate(sender, codeId, initMsg, "test_dutch_auction", "auto")

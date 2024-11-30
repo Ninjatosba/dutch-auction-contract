@@ -35,13 +35,13 @@ export interface DutchAuctionLaunchpadMsg {
     acceptedDenoms,
     admin,
     auctionCreationFee,
-    maxAutionDuration,
+    maxAuctionDuration,
     minSecondsUntilAuctionStart
   }: {
     acceptedDenoms?: string[];
     admin?: string;
     auctionCreationFee?: Coin;
-    maxAutionDuration?: number;
+    maxAuctionDuration?: number;
     minSecondsUntilAuctionStart?: number;
   }, _funds?: Coin[]) => MsgExecuteContractEncodeObject;
   cancelAuction: ({
@@ -120,13 +120,13 @@ export class DutchAuctionLaunchpadMsgComposer implements DutchAuctionLaunchpadMs
     acceptedDenoms,
     admin,
     auctionCreationFee,
-    maxAutionDuration,
+    maxAuctionDuration,
     minSecondsUntilAuctionStart
   }: {
     acceptedDenoms?: string[];
     admin?: string;
     auctionCreationFee?: Coin;
-    maxAutionDuration?: number;
+    maxAuctionDuration?: number;
     minSecondsUntilAuctionStart?: number;
   }, _funds?: Coin[]): MsgExecuteContractEncodeObject => {
     return {
@@ -139,7 +139,7 @@ export class DutchAuctionLaunchpadMsgComposer implements DutchAuctionLaunchpadMs
             accepted_denoms: acceptedDenoms,
             admin,
             auction_creation_fee: auctionCreationFee,
-            max_aution_duration: maxAutionDuration,
+            max_auction_duration: maxAuctionDuration,
             min_seconds_until_auction_start: minSecondsUntilAuctionStart
           }
         })),

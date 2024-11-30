@@ -82,10 +82,10 @@ impl Auction {
             .end_time
             .minus_seconds(self.start_time.seconds())
             .seconds();
-        if duration > params.max_aution_duration {
+        if duration > params.max_auction_duration {
             return Err(ContractError::DurationTooLong {
                 duration,
-                max_duration: params.max_aution_duration,
+                max_duration: params.max_auction_duration,
             });
         }
 
@@ -141,7 +141,7 @@ mod tests {
             },
             admin: Addr::unchecked("admin"),
             min_seconds_until_auction_start: 1000,
-            max_aution_duration: 1000,
+            max_auction_duration: 1000,
             accepted_denoms: vec!["uusd".to_string()],
         };
 
@@ -176,7 +176,7 @@ mod tests {
             },
             admin: Addr::unchecked("admin"),
             min_seconds_until_auction_start: 1000,
-            max_aution_duration: 2000,
+            max_auction_duration: 2000,
             accepted_denoms: vec!["uusd".to_string()],
         };
 

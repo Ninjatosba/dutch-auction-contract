@@ -14,7 +14,7 @@ pub struct Params {
     pub auction_creation_fee: Coin,
     pub admin: Addr,
     pub min_seconds_until_auction_start: u64,
-    pub max_aution_duration: u64,
+    pub max_auction_duration: u64,
     pub accepted_denoms: Vec<String>,
 }
 pub const PARAMS: Item<Params> = Item::new("params");

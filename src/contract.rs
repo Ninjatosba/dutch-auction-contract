@@ -30,7 +30,7 @@ pub fn instantiate(
     if msg.min_seconds_until_auction_start == 0 {
         return Err(ContractError::InvalidParams {});
     }
-    if msg.max_aution_duration == 0 {
+    if msg.max_auction_duration == 0 {
         return Err(ContractError::InvalidParams {});
     }
 
@@ -41,7 +41,7 @@ pub fn instantiate(
         auction_creation_fee: msg.auction_creation_fee,
         admin,
         min_seconds_until_auction_start: msg.min_seconds_until_auction_start,
-        max_aution_duration: msg.max_aution_duration,
+        max_auction_duration: msg.max_auction_duration,
         accepted_denoms: msg.accepted_denoms,
     };
 
@@ -81,7 +81,7 @@ pub fn execute(
         ExecuteMsg::ChangeParams {
             auction_creation_fee,
             min_seconds_until_auction_start,
-            max_aution_duration,
+            max_auction_duration,
             accepted_denoms,
             admin,
         } => execute_change_params(
@@ -90,7 +90,7 @@ pub fn execute(
             info,
             auction_creation_fee,
             min_seconds_until_auction_start,
-            max_aution_duration,
+            max_auction_duration,
             accepted_denoms,
             admin,
         ),
@@ -192,7 +192,7 @@ fn execute_change_params(
     info: MessageInfo,
     auction_creation_fee: Option<Coin>,
     min_seconds_until_auction_start: Option<u64>,
-    max_aution_duration: Option<u64>,
+    max_auction_duration: Option<u64>,
     accepted_denoms: Option<Vec<String>>,
     admin: Option<String>,
 ) -> Result<Response, ContractError> {
@@ -207,8 +207,8 @@ fn execute_change_params(
     if let Some(min_seconds_until_auction_start) = min_seconds_until_auction_start {
         params.min_seconds_until_auction_start = min_seconds_until_auction_start;
     }
-    if let Some(max_aution_duration) = max_aution_duration {
-        params.max_aution_duration = max_aution_duration;
+    if let Some(max_auction_duration) = max_auction_duration {
+        params.max_auction_duration = max_auction_duration;
     }
     if let Some(accepted_denoms) = accepted_denoms {
         params.accepted_denoms = accepted_denoms;

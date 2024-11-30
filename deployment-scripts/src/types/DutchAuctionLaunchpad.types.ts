@@ -9,7 +9,7 @@ export interface InstantiateMsg {
   accepted_denoms: string[];
   admin: string;
   auction_creation_fee: Coin;
-  max_aution_duration: number;
+  max_auction_duration: number;
   min_seconds_until_auction_start: number;
 }
 export interface Coin {
@@ -34,7 +34,7 @@ export type ExecuteMsg = {
     accepted_denoms?: string[] | null;
     admin?: string | null;
     auction_creation_fee?: Coin | null;
-    max_aution_duration?: number | null;
+    max_auction_duration?: number | null;
     min_seconds_until_auction_start?: number | null;
   };
 } | {
@@ -72,6 +72,6 @@ export interface Params {
   accepted_denoms: string[];
   admin: Addr;
   auction_creation_fee: Coin;
-  max_aution_duration: number;
+  max_auction_duration: number;
   min_seconds_until_auction_start: number;
 }

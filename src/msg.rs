@@ -8,7 +8,7 @@ pub struct InstantiateMsg {
     pub auction_creation_fee: Coin,
     pub admin: String,
     pub min_seconds_until_auction_start: u64,
-    pub max_aution_duration: u64,
+    pub max_auction_duration: u64,
     pub accepted_denoms: Vec<String>,
 }
 
@@ -28,7 +28,7 @@ pub enum ExecuteMsg {
     ChangeParams {
         auction_creation_fee: Option<Coin>,
         min_seconds_until_auction_start: Option<u64>,
-        max_aution_duration: Option<u64>,
+        max_auction_duration: Option<u64>,
         accepted_denoms: Option<Vec<String>>,
         admin: Option<String>,
     },

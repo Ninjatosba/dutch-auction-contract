@@ -93,13 +93,13 @@ export interface DutchAuctionLaunchpadInterface extends DutchAuctionLaunchpadRea
     acceptedDenoms,
     admin,
     auctionCreationFee,
-    maxAutionDuration,
+    maxAuctionDuration,
     minSecondsUntilAuctionStart
   }: {
     acceptedDenoms?: string[];
     admin?: string;
     auctionCreationFee?: Coin;
-    maxAutionDuration?: number;
+    maxAuctionDuration?: number;
     minSecondsUntilAuctionStart?: number;
   }, fee?: number | StdFee | "auto", memo?: string, _funds?: Coin[]) => Promise<ExecuteResult>;
   cancelAuction: ({
@@ -165,13 +165,13 @@ export class DutchAuctionLaunchpadClient extends DutchAuctionLaunchpadQueryClien
     acceptedDenoms,
     admin,
     auctionCreationFee,
-    maxAutionDuration,
+    maxAuctionDuration,
     minSecondsUntilAuctionStart
   }: {
     acceptedDenoms?: string[];
     admin?: string;
     auctionCreationFee?: Coin;
-    maxAutionDuration?: number;
+    maxAuctionDuration?: number;
     minSecondsUntilAuctionStart?: number;
   }, fee: number | StdFee | "auto" = "auto", memo?: string, _funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {
@@ -179,7 +179,7 @@ export class DutchAuctionLaunchpadClient extends DutchAuctionLaunchpadQueryClien
         accepted_denoms: acceptedDenoms,
         admin,
         auction_creation_fee: auctionCreationFee,
-        max_aution_duration: maxAutionDuration,
+        max_auction_duration: maxAuctionDuration,
         min_seconds_until_auction_start: minSecondsUntilAuctionStart
       }
     }, fee, memo, _funds);
