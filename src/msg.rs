@@ -14,15 +14,14 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     CreateAuction {
         offered_asset: Coin,
-        expected_denom: String,
+        in_denom: String,
         starting_price: Uint128,
-        lowest_price: Uint128,
+        end_price: Uint128,
         start_time: Timestamp,
         end_time: Timestamp,
     },
     Bid {
         auction_id: u8,
-        amount: Uint128,
     },
     ChangeParams {
         auction_creation_fee: Option<Coin>,

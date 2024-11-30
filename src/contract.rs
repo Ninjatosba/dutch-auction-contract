@@ -7,6 +7,7 @@ use cw_utils::must_pay;
 
 use crate::auction::{self, Auction};
 use crate::error::ContractError;
+use crate::helpers::check_payment;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{Params, AUCTIONS, AUCTION_INDEX, PARAMS};
 
@@ -58,9 +59,9 @@ pub fn execute(
     match msg {
         ExecuteMsg::CreateAuction {
             offered_asset,
-            expected_denom,
+            in_denom,
             starting_price,
-            lowest_price,
+            end_price,
             start_time,
             end_time,
         } => execute_create_auction(
@@ -68,26 +69,31 @@ pub fn execute(
             env,
             info,
             offered_asset,
-            expected_denom,
+            in_denom,
             starting_price,
-            lowest_price,
+            end_price,
             start_time,
             end_time,
         ),
-        ExecuteMsg::Bid { auction_id, amount } => execute_bid(deps, env, info, auction_id, amount),
+        ExecuteMsg::Bid { auction_id } => execute_bid(deps, env, info, auction_id),
         ExecuteMsg::ChangeParams {
             auction_creation_fee,
             min_seconds_until_auction_start,
             max_aution_duration,
             accepted_denoms,
             admin,
-        } => {
-            // Change contract parameters
-            unimplemented!()
-        }
+        } => execute_change_params(
+            deps,
+            env,
+            info,
+            auction_creation_fee,
+            min_seconds_until_auction_start,
+            max_aution_duration,
+            accepted_denoms,
+            admin,
+        ),
         ExecuteMsg::CancelAuction { auction_id } => {
-            // Cancel auction
-            unimplemented!()
+            execute_cancel_auction(deps, env, info, auction_id)
         }
     }
 }
@@ -97,33 +103,36 @@ fn execute_create_auction(
     env: Env,
     info: MessageInfo,
     offered_asset: Coin,
-    expected_denom: String,
+    in_denom: String,
     starting_price: Uint128,
-    lowest_price: Uint128,
+    end_price: Uint128,
     start_time: Timestamp,
     end_time: Timestamp,
 ) -> Result<Response, ContractError> {
     let params = PARAMS.load(deps.storage)?;
     let funds = info.funds.clone();
+
     let expected_funds = vec![params.auction_creation_fee.clone(), offered_asset.clone()];
-    // TODO - normalize and compare funds
-    if funds != expected_funds {
-        return Err(ContractError::InvalidParams {});
-    }
+    // Check if the sent funds are correct
+    check_payment(&funds, &expected_funds)?;
+
     let auction = Auction::new(
         info.sender.to_string(),
         offered_asset.clone(),
-        expected_denom,
+        in_denom,
         starting_price,
-        lowest_price,
+        end_price,
         start_time,
         end_time,
     );
+
     auction.validate(env.block.time, params.clone())?;
+
     let updated_auction_index = AUCTION_INDEX.update(deps.storage, |index| -> StdResult<u8> {
         let new_index = index + 1;
         Ok(new_index)
     })?;
+
     AUCTIONS.save(deps.storage, &updated_auction_index, &auction)?;
 
     let creation_fee_msg = BankMsg::Send {
@@ -146,46 +155,96 @@ fn execute_bid(
     env: Env,
     info: MessageInfo,
     auction_id: u8,
-    amount: Uint128,
 ) -> Result<Response, ContractError> {
-    let mut auction = AUCTIONS.load(deps.storage, &auction_id)?;
+    let mut auction = AUCTIONS
+        .load(deps.storage, &auction_id)
+        .map_err(|_| ContractError::AuctionNotFound {})?;
 
-    let remaining_amount = auction.remaining_amount;
-    if amount > remaining_amount {
-        return Err(ContractError::InsufficientAmount {});
+    if auction.is_active(env.block.time) {
+        return Err(ContractError::AuctionNotActive {});
     }
-    auction.remaining_amount = remaining_amount.checked_sub(amount)?;
-    AUCTIONS.save(deps.storage, &auction_id, &auction)?;
-
     let price = auction.calculate_price(env.block.time);
-    let expected_amount = price * amount;
-    let expected_denom = auction.offered_asset.denom.clone();
-    let sent_amount = must_pay(&info, &expected_denom)?;
+    let amount = must_pay(&info, &auction.in_denom)?;
 
-    if sent_amount <= expected_amount {
-        return Err(ContractError::InvalidBid {});
-    }
-    let refund_amount = sent_amount.checked_sub(expected_amount)?;
-
-    let refund_msg = BankMsg::Send {
-        to_address: info.sender.to_string(),
-        amount: vec![Coin {
-            denom: expected_denom,
-            amount: refund_amount,
-        }],
+    let acquired_amount = amount.checked_mul(price)?;
+    let acquired_asset = Coin {
+        denom: auction.offered_asset.denom.clone(),
+        amount: acquired_amount,
     };
-    let asset_msg = BankMsg::Send {
-        to_address: info.sender.to_string(),
-        amount: vec![auction.offered_asset],
-    };
+    auction.remaining_amount = auction.remaining_amount.checked_sub(acquired_amount)?;
+    AUCTIONS.save(deps.storage, &auction_id, &auction)?;
 
     let res: Response = Response::default()
         .add_attribute("action", "bid")
         .add_attribute("auction_id", auction_id.to_string())
         .add_attribute("bidder", info.sender)
         .add_attribute("amount", amount.to_string())
-        .add_message(refund_msg)
-        .add_message(asset_msg);
+        .add_attribute("acquired_asset_denom", acquired_asset.denom)
+        .add_attribute("acquired_asset_amount", acquired_asset.amount.to_string());
+    Ok(res)
+}
+
+fn execute_change_params(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    auction_creation_fee: Option<Coin>,
+    min_seconds_until_auction_start: Option<u64>,
+    max_aution_duration: Option<u64>,
+    accepted_denoms: Option<Vec<String>>,
+    admin: Option<String>,
+) -> Result<Response, ContractError> {
+    let mut params = PARAMS.load(deps.storage)?;
+    if info.sender != params.admin {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    if let Some(auction_creation_fee) = auction_creation_fee {
+        params.auction_creation_fee = auction_creation_fee;
+    }
+    if let Some(min_seconds_until_auction_start) = min_seconds_until_auction_start {
+        params.min_seconds_until_auction_start = min_seconds_until_auction_start;
+    }
+    if let Some(max_aution_duration) = max_aution_duration {
+        params.max_aution_duration = max_aution_duration;
+    }
+    if let Some(accepted_denoms) = accepted_denoms {
+        params.accepted_denoms = accepted_denoms;
+    }
+    if let Some(admin) = admin {
+        let admin = deps.api.addr_validate(&admin)?;
+        params.admin = admin;
+    }
+
+    PARAMS.save(deps.storage, &params)?;
+
+    let res: Response = Response::default().add_attribute("action", "change_params");
+    Ok(res)
+}
+
+fn execute_cancel_auction(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    auction_id: u8,
+) -> Result<Response, ContractError> {
+    let auction = AUCTIONS
+        .load(deps.storage, &auction_id)
+        .map_err(|_| ContractError::AuctionNotFound {})?;
+
+    if info.sender.to_string() != auction.creator {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    if auction.is_started(env.block.time) {
+        return Err(ContractError::AuctionCannotBeCanceled {});
+    }
+
+    AUCTIONS.remove(deps.storage, &auction_id);
+
+    let res: Response = Response::default()
+        .add_attribute("action", "cancel_auction")
+        .add_attribute("auction_id", auction_id.to_string());
     Ok(res)
 }
 
