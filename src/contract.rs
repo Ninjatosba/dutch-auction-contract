@@ -74,10 +74,7 @@ pub fn execute(
             start_time,
             end_time,
         ),
-        ExecuteMsg::Bid { auction_id, amount } => {
-            // Bid on auction
-            unimplemented!()
-        }
+        ExecuteMsg::Bid { auction_id, amount } => execute_bid(deps, env, info, auction_id, amount),
         ExecuteMsg::ChangeParams {
             auction_creation_fee,
             min_seconds_until_auction_start,

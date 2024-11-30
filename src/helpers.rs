@@ -1,4 +1,121 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_std::Coin;
+use cosmwasm_std::StdError;
+use cw_utils::NativeBalance;
+use thiserror::Error;
 
-use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, StdResult, WasmMsg};
+#[derive(Error, Debug, PartialEq)]
+pub enum CustomPaymentError {
+    #[error(transparent)]
+    Std(#[from] StdError),
+    #[error("Insufficient funds sent")]
+    InsufficientFunds {
+        expected: Vec<Coin>,
+        actual: Vec<Coin>,
+    },
+}
+pub fn check_payment(
+    sent_funds: &[Coin],
+    expected_funds: &[Coin],
+) -> Result<(), CustomPaymentError> {
+    let mut expected_balance = NativeBalance::default();
+    for coin in expected_funds {
+        expected_balance += coin.clone();
+    }
+    expected_balance.normalize();
+
+    let mut sent_balance = NativeBalance::default();
+    for coin in sent_funds {
+        sent_balance += coin.clone();
+    }
+    sent_balance.normalize();
+
+    if expected_balance != sent_balance {
+        return Err(CustomPaymentError::InsufficientFunds {
+            expected: expected_funds.to_vec(),
+            actual: sent_funds.to_vec(),
+        });
+    }
+
+    Ok(())
+}
+
+// Test check_payment
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::coin;
+
+    #[test]
+    fn test_check_payment() {
+        let sent_funds = vec![coin(100, "uluna"), coin(100, "uusd")];
+        let expected_funds = vec![coin(100, "uluna"), coin(100, "uusd")];
+        let res = check_payment(&sent_funds, &expected_funds);
+        assert!(res.is_ok());
+
+        let sent_funds = vec![coin(100, "uluna"), coin(100, "uusd")];
+        let expected_funds = vec![coin(100, "uluna")];
+        let res = check_payment(&sent_funds, &expected_funds);
+        assert!(res.is_err());
+
+        let sent_funds = vec![coin(100, "uluna")];
+        let expected_funds = vec![coin(100, "uluna"), coin(100, "uusd")];
+        let res = check_payment(&sent_funds, &expected_funds);
+        assert!(res.is_err());
+
+        let sent_funds = vec![coin(100, "uluna"), coin(100, "uusd")];
+        let expected_funds = vec![coin(100, "uluna"), coin(200, "uusd")];
+        let res = check_payment(&sent_funds, &expected_funds);
+        assert!(res.is_err());
+
+        let sent_funds = vec![coin(300, "uluna")];
+        let expected_funds = vec![coin(100, "uluna"), coin(200, "uluna")];
+        let res = check_payment(&sent_funds, &expected_funds);
+        assert!(res.is_ok());
+
+        let sent_funds = vec![coin(300 - 1, "uluna")];
+        let expected_funds = vec![coin(100, "uluna"), coin(200, "uluna")];
+        let res = check_payment(&sent_funds, &expected_funds);
+        assert!(res.is_err());
+
+        let sent_funds = vec![coin(300, "uluna"), coin(100, "uusd")];
+        let expected_funds = vec![coin(300, "uluna"), coin(200, "uatom")];
+        let res = check_payment(&sent_funds, &expected_funds);
+        assert!(res.is_err());
+
+        let sent_funds = vec![coin(1100, "uluna")];
+        let expected_funds = vec![
+            coin(100, "uluna"),
+            coin(200, "uluna"),
+            coin(300, "uluna"),
+            coin(500, "uluna"),
+        ];
+        let res = check_payment(&sent_funds, &expected_funds);
+        assert!(res.is_ok());
+
+        let sent_funds = vec![coin(1100 + 1, "uluna")];
+        let expected_funds = vec![
+            coin(100, "uluna"),
+            coin(200, "uluna"),
+            coin(300, "uluna"),
+            coin(500, "uluna"),
+        ];
+        // More funds sent than expected
+        let res = check_payment(&sent_funds, &expected_funds);
+        assert!(res.is_err());
+
+        let sent_funds = vec![coin(1100 - 1, "uluna")];
+        let expected_funds = vec![
+            coin(100, "uluna"),
+            coin(200, "uluna"),
+            coin(300, "uluna"),
+            coin(500, "uluna"),
+        ];
+        let res = check_payment(&sent_funds, &expected_funds);
+        assert!(res.is_err());
+
+        let sent_funds = vec![coin(1100, "uluna")];
+        let expected_funds = vec![coin(0, "something"), coin(1100, "uluna")];
+        let res = check_payment(&sent_funds, &expected_funds);
+        assert!(res.is_ok());
+    }
+}
