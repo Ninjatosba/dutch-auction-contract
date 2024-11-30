@@ -6,7 +6,7 @@ use cw_storage_plus::Map;
 
 use crate::auction::Auction;
 
-pub const AUCTIONS: Map<&u8, Auction> = Map::new("auctions");
+pub const AUCTIONS: Map<u8, Auction> = Map::new("auctions");
 pub const AUCTION_INDEX: Item<u8> = Item::new("auction_index");
 
 #[cw_serde]

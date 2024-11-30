@@ -69,3 +69,9 @@ pub enum ContractError {
     #[error("Auction cannot be canceled")]
     AuctionCannotBeCanceled {},
 }
+
+impl From<ContractError> for StdError {
+    fn from(err: ContractError) -> StdError {
+        StdError::generic_err(err.to_string())
+    }
+}

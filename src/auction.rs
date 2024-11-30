@@ -114,7 +114,6 @@ impl Auction {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Add;
 
     use super::*;
     use cosmwasm_std::{Addr, Timestamp};

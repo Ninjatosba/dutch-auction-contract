@@ -1,11 +1,13 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Timestamp, Uint128,
+    to_json_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
+    StdResult, Timestamp, Uint128,
 };
+use cw_storage_plus::Bound;
 use cw_utils::must_pay;
 
-use crate::auction::{self, Auction};
+use crate::auction::Auction;
 use crate::error::ContractError;
 use crate::helpers::check_payment;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
@@ -133,7 +135,7 @@ fn execute_create_auction(
         Ok(new_index)
     })?;
 
-    AUCTIONS.save(deps.storage, &updated_auction_index, &auction)?;
+    AUCTIONS.save(deps.storage, updated_auction_index, &auction)?;
 
     let creation_fee_msg = BankMsg::Send {
         to_address: params.admin.to_string(),
@@ -157,7 +159,7 @@ fn execute_bid(
     auction_id: u8,
 ) -> Result<Response, ContractError> {
     let mut auction = AUCTIONS
-        .load(deps.storage, &auction_id)
+        .load(deps.storage, auction_id)
         .map_err(|_| ContractError::AuctionNotFound {})?;
 
     if auction.is_active(env.block.time) {
@@ -172,7 +174,7 @@ fn execute_bid(
         amount: acquired_amount,
     };
     auction.remaining_amount = auction.remaining_amount.checked_sub(acquired_amount)?;
-    AUCTIONS.save(deps.storage, &auction_id, &auction)?;
+    AUCTIONS.save(deps.storage, auction_id, &auction)?;
 
     let res: Response = Response::default()
         .add_attribute("action", "bid")
@@ -229,7 +231,7 @@ fn execute_cancel_auction(
     auction_id: u8,
 ) -> Result<Response, ContractError> {
     let auction = AUCTIONS
-        .load(deps.storage, &auction_id)
+        .load(deps.storage, auction_id)
         .map_err(|_| ContractError::AuctionNotFound {})?;
 
     if info.sender.to_string() != auction.creator {
@@ -240,7 +242,7 @@ fn execute_cancel_auction(
         return Err(ContractError::AuctionCannotBeCanceled {});
     }
 
-    AUCTIONS.remove(deps.storage, &auction_id);
+    AUCTIONS.remove(deps.storage, auction_id);
 
     let res: Response = Response::default()
         .add_attribute("action", "cancel_auction")
@@ -250,7 +252,47 @@ fn execute_cancel_auction(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
-    unimplemented!()
+    match _msg {
+        QueryMsg::Auctions { start_after, limit } => {
+            to_json_binary(&query_auctions(_deps, start_after, limit)?)
+        }
+
+        QueryMsg::Auction { auction_id } => to_json_binary(&query_auction(_deps, auction_id)?),
+        QueryMsg::Params {} => to_json_binary(&query_params(_deps)?),
+    }
+}
+
+fn query_params(deps: Deps) -> Result<Params, ContractError> {
+    PARAMS
+        .load(deps.storage)
+        .map_err(|_| ContractError::InvalidParams {})
+}
+
+fn query_auction(deps: Deps, auction_id: u8) -> Result<Auction, ContractError> {
+    AUCTIONS
+        .load(deps.storage, auction_id)
+        .map_err(|_| ContractError::AuctionNotFound {})
+}
+
+const MAX_LIMIT: u8 = 30;
+
+fn query_auctions(
+    deps: Deps,
+    start_after: Option<u8>,
+    limit: Option<u8>,
+) -> StdResult<Vec<(u8, Auction)>> {
+    let start = start_after.map(Bound::exclusive);
+    let limit = limit.unwrap_or(MAX_LIMIT).min(MAX_LIMIT) as usize;
+
+    let auctions = AUCTIONS
+        .range(deps.storage, start, None, Order::Ascending)
+        .take(limit)
+        .map(|item| {
+            let (index, auction) = item?;
+            Ok((index, auction))
+        })
+        .collect::<StdResult<Vec<_>>>()?;
+    Ok(auctions)
 }
 
 #[cfg(test)]

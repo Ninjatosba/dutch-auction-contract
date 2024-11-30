@@ -1,5 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Coin, Timestamp, Uint128};
+use cosmwasm_std::{Coin, Timestamp, Uint128};
+
+use crate::{auction::Auction, state::Params};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -37,4 +39,15 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 #[derive(QueryResponses)]
-pub enum QueryMsg {}
+pub enum QueryMsg {
+    #[returns(Vec<(u8,Auction)>)]
+    Auctions {
+        start_after: Option<u8>,
+        limit: Option<u8>,
+    },
+    #[returns(Auction)]
+    Auction { auction_id: u8 },
+
+    #[returns(Params)]
+    Params {},
+}
