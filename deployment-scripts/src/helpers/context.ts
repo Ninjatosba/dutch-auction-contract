@@ -151,7 +151,7 @@ export default class Context {
 
     getNewWallets = async () => {
         // Get test Users length
-        let newAccounts = await Promise.all(testAccounts.map(async (account) => {
+        let newAccounts = await Promise.all(testAccounts.map(async (account: any) => {
             let wallet = await DirectSecp256k1HdWallet.generate(12, { prefix: chainConfig.prefix })
             let address = await wallet.getAccounts()
             let mnemonic = await wallet.mnemonic
