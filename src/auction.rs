@@ -53,12 +53,12 @@ impl Auction {
             });
         }
 
-        // Denomination validation
-        if self.offered_asset.denom == self.in_denom {
-            return Err(ContractError::SameDenomination {
-                denom: self.offered_asset.denom.clone(),
-            });
-        }
+        // // Denomination validation
+        // if self.offered_asset.denom == self.in_denom {
+        //     return Err(ContractError::SameDenomination {
+        //         denom: self.offered_asset.denom.clone(),
+        //     });
+        // }
 
         // Start time in the past
         if self.start_time < now {

@@ -136,11 +136,13 @@ fn execute_create_auction(
     })?;
 
     AUCTIONS.save(deps.storage, updated_auction_index, &auction)?;
-
-    let creation_fee_msg = BankMsg::Send {
-        to_address: params.admin.to_string(),
-        amount: vec![params.auction_creation_fee],
-    };
+    let mut msgs = vec![];
+    if params.auction_creation_fee.amount > Uint128::zero() {
+        msgs.push(BankMsg::Send {
+            to_address: params.admin.to_string(),
+            amount: vec![params.auction_creation_fee.clone()],
+        });
+    }
 
     let res: Response = Response::default()
         .add_attribute("action", "create_auction")
@@ -148,7 +150,7 @@ fn execute_create_auction(
         .add_attribute("creator", info.sender)
         .add_attribute("offered_asset_denom", offered_asset.denom.to_string())
         .add_attribute("offered_asset_amount", offered_asset.amount.to_string())
-        .add_message(creation_fee_msg);
+        .add_messages(msgs);
     Ok(res)
 }
 
