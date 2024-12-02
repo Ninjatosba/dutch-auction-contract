@@ -1,9 +1,9 @@
 {
   "denom": "uom",
   "prefix": "mantra",
-  "chain_id": "mantra-hongbai-1",
-  "grpc_endpoint": "https://rpc.hongbai.mantrachain.io/",
+  "chain_id": "mantra-dukong-1",
+  "grpc_endpoint": "https://rpc.dukong.mantrachain.io",
   "gas_prices": 1.2,
   "gas_adjustment": 1.4,
-  "artifacts_path": "../../artifacts"
+  "artifacts_path": "../artifacts"
 }

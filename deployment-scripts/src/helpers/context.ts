@@ -6,8 +6,9 @@ import fs from 'fs'
 import _ from 'lodash'
 import path from 'path'
 import { logger } from '../utils/logger'
-import { Coin, DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
+import { coin, Coin, DirectSecp256k1HdWallet } from '@cosmjs/proto-signing'
 import { InstantiateMsg as DutchAuctionLaunchpadInstantiateMsg } from '../types/DutchAuctionLaunchpad.types';
+import { DutchAuctionLaunchpadClient } from '../types/DutchAuctionLaunchpad.client.ts'
 export const CONTRACT_MAP = {
     DUTCH_AUCTION_LAUNCHPAD: 'dutch_auction_launchpad',
 }
@@ -96,7 +97,6 @@ export default class Context {
     }
 
     initialize = async () => {
-        await this.getNewWallets()
         await this.initializeTestUsers()
         if ((fs.existsSync(this.testCachePath)) && (!UPLOAD_CONTRACTS)) {
             this.readTempContext()
@@ -135,12 +135,38 @@ export default class Context {
         let initMsg: DutchAuctionLaunchpadInstantiateMsg = {
             accepted_denoms: [chainConfig.denom],
             admin: sender,
-            auction_creation_fee: { denom: chainConfig.denom, amount: '1000000' },
-            max_auction_duration: 86400,
-            min_seconds_until_auction_start: 86400
+            auction_creation_fee: { denom: chainConfig.denom, amount: '0' },
+            max_auction_duration: 604800,
+            min_seconds_until_auction_start: 1
         }
         let res = await client.instantiate(sender, codeId, initMsg, "test_dutch_auction", "auto")
         logger.log(1, `Instantiated ${CONTRACT_MAP.DUTCH_AUCTION_LAUNCHPAD} contract with address ${res.contractAddress}`)
+        logger.log(1, `Tx Hash: ${res.transactionHash}`)
+        this.addContractAddress(CONTRACT_MAP.DUTCH_AUCTION_LAUNCHPAD, res.contractAddress)
+    }
+
+    createDutchAuction = async (
+        offeredAsset: { denom: string, amount: string },
+        startPrice: string,
+        endPrice: string,
+        startTime: string,
+        endTime: string,
+    ) => {
+        let { client, address: sender } = this.getTestUser('admin')
+        let contractAddress = this.getContractAddress(CONTRACT_MAP.DUTCH_AUCTION_LAUNCHPAD)
+        let dutchAuctionClient = new DutchAuctionLaunchpadClient(client, sender, contractAddress)
+        let res = await dutchAuctionClient.createAuction({
+            startTime: startTime,
+            endTime: endTime,
+            endPrice: endPrice,
+            offeredAsset: offeredAsset,
+            startingPrice: startPrice,
+            inDenom: chainConfig.denom,
+
+        }, "auto", undefined, [
+            offeredAsset
+        ])
+        logger.log(1, `Created Dutch Auction with auction id ${this.getEventAttribute(res, 'wasm', 'auction_id')}`)
         logger.log(1, `Tx Hash: ${res.transactionHash}`)
     }
 
@@ -176,7 +202,7 @@ export default class Context {
             console.log(`New account created with address: ${account.address}`)
             return account
         }))
-        fs.writeFileSync(path.join(__dirname, '../../configs/test_accounts.ts'), JSON.stringify(newAccounts, null, 2))
+        fs.writeFileSync(path.join(__dirname, '../../configs/test_accounts.ts'), "export const TestAccounts = " + JSON.stringify(newAccounts, null, 2))
     }
 
     normalizeCoins = (coins: Coin[]): Coin[] => {
@@ -229,6 +255,11 @@ export default class Context {
         }
 
         return "";
+    }
+    getNanoTimestamp = (seconds: number): string => {
+        let nowNano = new Date().getTime() * 1000000;
+        let nanoSeconds = nowNano + seconds * 1000000000;
+        return nanoSeconds.toString();
     }
 
 

@@ -11,7 +11,7 @@
     "node": ">=v16.16.0"
   },
   "scripts": {
-    "channel-contract": "ts-node src/scripts/deploy-dutch-auction-launchpad.ts"
+    "deploy-dutch-auction": "ts-node src/scripts/deploy-dutch-auction-lauchpad.ts"
   },
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "^0.32.3",
