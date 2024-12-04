@@ -18,12 +18,12 @@ export interface Coin {
 }
 export type ExecuteMsg = {
   create_auction: {
-    end_price: Uint128;
+    end_price: Decimal;
     end_time: Timestamp;
     in_denom: string;
     offered_asset: Coin;
     start_time: Timestamp;
-    starting_price: Uint128;
+    starting_price: Decimal;
   };
 } | {
   bid: {
@@ -42,6 +42,7 @@ export type ExecuteMsg = {
     auction_id: number;
   };
 };
+export type Decimal = string;
 export type Timestamp = Uint64;
 export type Uint64 = string;
 export type QueryMsg = {
@@ -58,13 +59,13 @@ export type QueryMsg = {
 };
 export interface Auction {
   creator: string;
-  end_price: Uint128;
+  end_price: Decimal;
   end_time: Timestamp;
   in_denom: string;
   offered_asset: Coin;
   remaining_amount: Uint128;
   start_time: Timestamp;
-  starting_price: Uint128;
+  starting_price: Decimal;
 }
 export type ArrayOfTupleOfUint8AndAuction = [number, Auction][];
 export type Addr = string;

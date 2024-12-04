@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
-    StdResult, Timestamp, Uint128,
+    to_json_binary, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Order,
+    Response, StdResult, Timestamp, Uint128,
 };
 use cw_storage_plus::Bound;
 use cw_utils::must_pay;
@@ -106,8 +106,8 @@ fn execute_create_auction(
     info: MessageInfo,
     offered_asset: Coin,
     in_denom: String,
-    starting_price: Uint128,
-    end_price: Uint128,
+    starting_price: Decimal,
+    end_price: Decimal,
     start_time: Timestamp,
     end_time: Timestamp,
 ) -> Result<Response, ContractError> {
@@ -167,13 +167,25 @@ fn execute_bid(
     if auction.is_active(env.block.time) {
         return Err(ContractError::AuctionNotActive {});
     }
-    let price = auction.calculate_price(env.block.time);
-    let amount = must_pay(&info, &auction.in_denom)?;
 
-    let acquired_amount = amount.checked_mul(price)?;
+    let price = auction.calculate_price(env.block.time);
+    let paid_amount = must_pay(&info, &auction.in_denom)?;
+
+    let acquired_amount = Decimal::from_ratio(paid_amount.u128(), 1u128)
+        .checked_div(price)?
+        .to_uint_floor();
+
+    if acquired_amount >= auction.remaining_amount {
+        return Err(ContractError::InsufficientRemainingAmount {});
+    }
+
     let acquired_asset = Coin {
         denom: auction.offered_asset.denom.clone(),
         amount: acquired_amount,
+    };
+    let msg = BankMsg::Send {
+        to_address: info.sender.to_string(),
+        amount: vec![acquired_asset.clone()],
     };
     auction.remaining_amount = auction.remaining_amount.checked_sub(acquired_amount)?;
     AUCTIONS.save(deps.storage, auction_id, &auction)?;
@@ -182,9 +194,10 @@ fn execute_bid(
         .add_attribute("action", "bid")
         .add_attribute("auction_id", auction_id.to_string())
         .add_attribute("bidder", info.sender)
-        .add_attribute("amount", amount.to_string())
+        .add_attribute("amount", paid_amount.to_string())
         .add_attribute("acquired_asset_denom", acquired_asset.denom)
-        .add_attribute("acquired_asset_amount", acquired_asset.amount.to_string());
+        .add_attribute("acquired_asset_amount", acquired_asset.amount.to_string())
+        .add_message(msg);
     Ok(res)
 }
 

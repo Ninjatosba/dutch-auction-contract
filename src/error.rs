@@ -1,11 +1,11 @@
+use crate::helpers::CustomPaymentError;
+use cosmwasm_std::CheckedFromRatioError;
+use cosmwasm_std::DivideByZeroError;
 use cosmwasm_std::OverflowError;
 use cosmwasm_std::StdError;
 use cosmwasm_std::Timestamp;
-use cosmwasm_std::Uint128;
 use cw_utils::PaymentError;
 use thiserror::Error;
-
-use crate::helpers::CustomPaymentError;
 
 #[derive(Error, Debug)]
 pub enum ContractError {
@@ -19,6 +19,11 @@ pub enum ContractError {
     CustomPayment(#[from] CustomPaymentError),
 
     #[error("{0}")]
+    DivideByZero(#[from] DivideByZeroError),
+
+    #[error("Overflow: {0}")]
+    CheckedFromRatio(#[from] CheckedFromRatioError),
+    #[error("{0}")]
     Overflow(#[from] OverflowError),
 
     #[error("Unauthorized: the sender is not authorized to perform this action")]
@@ -30,11 +35,8 @@ pub enum ContractError {
         end_time: Timestamp,
     },
 
-    #[error("End price ({end_price}) cannot be higher than starting price ({starting_price})")]
-    EndPriceHigherThanStartingPrice {
-        starting_price: Uint128,
-        end_price: Uint128,
-    },
+    #[error("End price can not be higher than starting price")]
+    EndPriceHigherThanStartingPrice {},
 
     #[error("Auction start time ({start_time}) cannot be in the past (current time: {now})")]
     StartTimeInPast {

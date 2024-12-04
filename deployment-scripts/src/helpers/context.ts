@@ -170,6 +170,21 @@ export default class Context {
         logger.log(1, `Tx Hash: ${res.transactionHash}`)
     }
 
+    bidDutchAuction = async (
+        auctionId: number,
+        amount: string,
+    ) => {
+        let { client, address: sender } = this.getTestUser('admin')
+        let contractAddress = this.getContractAddress(CONTRACT_MAP.DUTCH_AUCTION_LAUNCHPAD)
+        let dutchAuctionClient = new DutchAuctionLaunchpadClient(client, sender, contractAddress)
+        let res = await dutchAuctionClient.bid({ auctionId: auctionId }, "auto", undefined, [
+            coin(amount, chainConfig.denom)
+        ]
+        )
+        logger.log(1, `Bid on Dutch Auction with auction id ${auctionId}`)
+        logger.log(1, `Tx Hash: ${res.transactionHash}`)
+    }
+
     addContractAddress = (contractKey: string, contractAddress: string) => {
         this.contracts[contractKey] = _.extend([], this.contracts[contractKey], [contractAddress])
     }

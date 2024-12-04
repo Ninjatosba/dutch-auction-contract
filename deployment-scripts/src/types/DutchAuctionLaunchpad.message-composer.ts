@@ -7,7 +7,7 @@
 import { MsgExecuteContractEncodeObject } from "@cosmjs/cosmwasm-stargate";
 import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx";
 import { toUtf8 } from "@cosmjs/encoding";
-import { Uint128, InstantiateMsg, Coin, ExecuteMsg, Timestamp, Uint64, QueryMsg, Auction, ArrayOfTupleOfUint8AndAuction, Addr, Params } from "./DutchAuctionLaunchpad.types";
+import { Uint128, InstantiateMsg, Coin, ExecuteMsg, Decimal, Timestamp, Uint64, QueryMsg, Auction, ArrayOfTupleOfUint8AndAuction, Addr, Params } from "./DutchAuctionLaunchpad.types";
 export interface DutchAuctionLaunchpadMsg {
   contractAddress: string;
   sender: string;
@@ -19,12 +19,12 @@ export interface DutchAuctionLaunchpadMsg {
     startTime,
     startingPrice
   }: {
-    endPrice: Uint128;
+    endPrice: Decimal;
     endTime: Timestamp;
     inDenom: string;
     offeredAsset: Coin;
     startTime: Timestamp;
-    startingPrice: Uint128;
+    startingPrice: Decimal;
   }, _funds?: Coin[]) => MsgExecuteContractEncodeObject;
   bid: ({
     auctionId
@@ -71,12 +71,12 @@ export class DutchAuctionLaunchpadMsgComposer implements DutchAuctionLaunchpadMs
     startTime,
     startingPrice
   }: {
-    endPrice: Uint128;
+    endPrice: Decimal;
     endTime: Timestamp;
     inDenom: string;
     offeredAsset: Coin;
     startTime: Timestamp;
-    startingPrice: Uint128;
+    startingPrice: Decimal;
   }, _funds?: Coin[]): MsgExecuteContractEncodeObject => {
     return {
       typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",

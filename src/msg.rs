@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Coin, Timestamp, Uint128};
+use cosmwasm_std::{Coin, Decimal, Timestamp};
 
 use crate::{auction::Auction, state::Params};
 
@@ -17,8 +17,8 @@ pub enum ExecuteMsg {
     CreateAuction {
         offered_asset: Coin,
         in_denom: String,
-        starting_price: Uint128,
-        end_price: Uint128,
+        starting_price: Decimal,
+        end_price: Decimal,
         start_time: Timestamp,
         end_time: Timestamp,
     },

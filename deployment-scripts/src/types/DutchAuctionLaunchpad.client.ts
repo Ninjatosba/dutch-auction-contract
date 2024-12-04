@@ -6,7 +6,7 @@
 
 import { CosmWasmClient, SigningCosmWasmClient, ExecuteResult } from "@cosmjs/cosmwasm-stargate";
 import { StdFee } from "@cosmjs/amino";
-import { Uint128, InstantiateMsg, Coin, ExecuteMsg, Timestamp, Uint64, QueryMsg, Auction, ArrayOfTupleOfUint8AndAuction, Addr, Params } from "./DutchAuctionLaunchpad.types";
+import { Uint128, InstantiateMsg, Coin, ExecuteMsg, Decimal, Timestamp, Uint64, QueryMsg, Auction, ArrayOfTupleOfUint8AndAuction, Addr, Params } from "./DutchAuctionLaunchpad.types";
 export interface DutchAuctionLaunchpadReadOnlyInterface {
   contractAddress: string;
   auctions: ({
@@ -77,12 +77,12 @@ export interface DutchAuctionLaunchpadInterface extends DutchAuctionLaunchpadRea
     startTime,
     startingPrice
   }: {
-    endPrice: Uint128;
+    endPrice: Decimal;
     endTime: Timestamp;
     inDenom: string;
     offeredAsset: Coin;
     startTime: Timestamp;
-    startingPrice: Uint128;
+    startingPrice: Decimal;
   }, fee?: number | StdFee | "auto", memo?: string, _funds?: Coin[]) => Promise<ExecuteResult>;
   bid: ({
     auctionId
@@ -132,12 +132,12 @@ export class DutchAuctionLaunchpadClient extends DutchAuctionLaunchpadQueryClien
     startTime,
     startingPrice
   }: {
-    endPrice: Uint128;
+    endPrice: Decimal;
     endTime: Timestamp;
     inDenom: string;
     offeredAsset: Coin;
     startTime: Timestamp;
-    startingPrice: Uint128;
+    startingPrice: Decimal;
   }, fee: number | StdFee | "auto" = "auto", memo?: string, _funds?: Coin[]): Promise<ExecuteResult> => {
     return await this.client.execute(this.sender, this.contractAddress, {
       create_auction: {

@@ -5,7 +5,7 @@
 */
 
 import { UseQueryOptions, useQuery } from "react-query";
-import { Uint128, InstantiateMsg, Coin, ExecuteMsg, Timestamp, Uint64, QueryMsg, Auction, ArrayOfTupleOfUint8AndAuction, Addr, Params } from "./DutchAuctionLaunchpad.types";
+import { Uint128, InstantiateMsg, Coin, ExecuteMsg, Decimal, Timestamp, Uint64, QueryMsg, Auction, ArrayOfTupleOfUint8AndAuction, Addr, Params } from "./DutchAuctionLaunchpad.types";
 import { DutchAuctionLaunchpadQueryClient } from "./DutchAuctionLaunchpad.client";
 export interface DutchAuctionLaunchpadReactQuery<TResponse, TData = TResponse> {
   client: DutchAuctionLaunchpadQueryClient;

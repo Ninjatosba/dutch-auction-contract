@@ -13,10 +13,10 @@ const deployDutchAuction = async () => {
     let endTime = context.getNanoTimestamp(200);
     let offeredAsset = {
         denom: chainConfig.denom,
-        amount: '1000000000'
+        amount: '1000'
     }
-    let startingPrice = "2"
-    let endPrice = "1"
+    let startingPrice = "100"
+    let endPrice = "10"
 
 
     await context.createDutchAuction(
@@ -27,6 +27,7 @@ const deployDutchAuction = async () => {
         endTime,
     );
 
+    await context.bidDutchAuction(1, '1000');
 }
 
 deployDutchAuction().then(() => {
