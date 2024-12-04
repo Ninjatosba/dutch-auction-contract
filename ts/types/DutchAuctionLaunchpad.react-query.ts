@@ -8,15 +8,19 @@ import { UseQueryOptions, useQuery } from "react-query";
 import { Uint128, InstantiateMsg, Coin, ExecuteMsg, Decimal, Timestamp, Uint64, QueryMsg, Auction, ArrayOfTupleOfUint8AndAuction, Addr, Params } from "./DutchAuctionLaunchpad.types";
 import { DutchAuctionLaunchpadQueryClient } from "./DutchAuctionLaunchpad.client";
 export interface DutchAuctionLaunchpadReactQuery<TResponse, TData = TResponse> {
-  client: DutchAuctionLaunchpadQueryClient;
-  options?: UseQueryOptions<TResponse, Error, TData>;
+  client: DutchAuctionLaunchpadQueryClient | undefined;
+  options?: Omit<UseQueryOptions<TResponse, Error, TData>, "'queryKey' | 'queryFn' | 'initialData'"> & {
+    initialData?: undefined;
+  };
 }
 export interface DutchAuctionLaunchpadParamsQuery<TData> extends DutchAuctionLaunchpadReactQuery<Params, TData> {}
 export function useDutchAuctionLaunchpadParamsQuery<TData = Params>({
   client,
   options
 }: DutchAuctionLaunchpadParamsQuery<TData>) {
-  return useQuery<Params, Error, TData>(["dutchAuctionLaunchpadParams", client.contractAddress], () => client.params(), options);
+  return useQuery<Params, Error, TData>(dutchAuctionLaunchpadQueryKeys.params(client?.contractAddress), () => client ? client.params() : Promise.reject(new Error("Invalid client")), { ...options,
+    enabled: !!client && (options?.enabled != undefined ? options.enabled : true)
+  });
 }
 export interface DutchAuctionLaunchpadAuctionQuery<TData> extends DutchAuctionLaunchpadReactQuery<Auction, TData> {
   args: {
@@ -28,9 +32,11 @@ export function useDutchAuctionLaunchpadAuctionQuery<TData = Auction>({
   args,
   options
 }: DutchAuctionLaunchpadAuctionQuery<TData>) {
-  return useQuery<Auction, Error, TData>(["dutchAuctionLaunchpadAuction", client.contractAddress, JSON.stringify(args)], () => client.auction({
+  return useQuery<Auction, Error, TData>(dutchAuctionLaunchpadQueryKeys.auction(client?.contractAddress, args), () => client ? client.auction({
     auctionId: args.auctionId
-  }), options);
+  }) : Promise.reject(new Error("Invalid client")), { ...options,
+    enabled: !!client && (options?.enabled != undefined ? options.enabled : true)
+  });
 }
 export interface DutchAuctionLaunchpadAuctionsQuery<TData> extends DutchAuctionLaunchpadReactQuery<ArrayOfTupleOfUint8AndAuction, TData> {
   args: {
@@ -43,8 +49,107 @@ export function useDutchAuctionLaunchpadAuctionsQuery<TData = ArrayOfTupleOfUint
   args,
   options
 }: DutchAuctionLaunchpadAuctionsQuery<TData>) {
-  return useQuery<ArrayOfTupleOfUint8AndAuction, Error, TData>(["dutchAuctionLaunchpadAuctions", client.contractAddress, JSON.stringify(args)], () => client.auctions({
+  return useQuery<ArrayOfTupleOfUint8AndAuction, Error, TData>(dutchAuctionLaunchpadQueryKeys.auctions(client?.contractAddress, args), () => client ? client.auctions({
     limit: args.limit,
     startAfter: args.startAfter
-  }), options);
+  }) : Promise.reject(new Error("Invalid client")), { ...options,
+    enabled: !!client && (options?.enabled != undefined ? options.enabled : true)
+  });
+}
+export interface DutchAuctionLaunchpadCancelAuctionMutation {
+  client: DutchAuctionLaunchpadClient;
+  msg: {
+    auctionId: number;
+  };
+  args?: {
+    fee?: number | StdFee | "auto";
+    memo?: string;
+    funds?: Coin[];
+  };
+}
+export function useDutchAuctionLaunchpadCancelAuctionMutation(options?: Omit<UseMutationOptions<ExecuteResult, Error, DutchAuctionLaunchpadCancelAuctionMutation>, "mutationFn">) {
+  return useMutation<ExecuteResult, Error, DutchAuctionLaunchpadCancelAuctionMutation>(({
+    client,
+    msg,
+    args: {
+      fee,
+      memo,
+      funds
+    } = {}
+  }) => client.cancelAuction(msg, fee, memo, funds), options);
+}
+export interface DutchAuctionLaunchpadChangeParamsMutation {
+  client: DutchAuctionLaunchpadClient;
+  msg: {
+    acceptedDenoms?: string[];
+    admin?: string;
+    auctionCreationFee?: Coin;
+    maxAuctionDuration?: number;
+    minSecondsUntilAuctionStart?: number;
+  };
+  args?: {
+    fee?: number | StdFee | "auto";
+    memo?: string;
+    funds?: Coin[];
+  };
+}
+export function useDutchAuctionLaunchpadChangeParamsMutation(options?: Omit<UseMutationOptions<ExecuteResult, Error, DutchAuctionLaunchpadChangeParamsMutation>, "mutationFn">) {
+  return useMutation<ExecuteResult, Error, DutchAuctionLaunchpadChangeParamsMutation>(({
+    client,
+    msg,
+    args: {
+      fee,
+      memo,
+      funds
+    } = {}
+  }) => client.changeParams(msg, fee, memo, funds), options);
+}
+export interface DutchAuctionLaunchpadBidMutation {
+  client: DutchAuctionLaunchpadClient;
+  msg: {
+    auctionId: number;
+  };
+  args?: {
+    fee?: number | StdFee | "auto";
+    memo?: string;
+    funds?: Coin[];
+  };
+}
+export function useDutchAuctionLaunchpadBidMutation(options?: Omit<UseMutationOptions<ExecuteResult, Error, DutchAuctionLaunchpadBidMutation>, "mutationFn">) {
+  return useMutation<ExecuteResult, Error, DutchAuctionLaunchpadBidMutation>(({
+    client,
+    msg,
+    args: {
+      fee,
+      memo,
+      funds
+    } = {}
+  }) => client.bid(msg, fee, memo, funds), options);
+}
+export interface DutchAuctionLaunchpadCreateAuctionMutation {
+  client: DutchAuctionLaunchpadClient;
+  msg: {
+    endPrice: Uint128;
+    endTime: Timestamp;
+    inDenom: string;
+    offeredAsset: Coin;
+    startTime: Timestamp;
+    startingPrice: Uint128;
+  };
+  args?: {
+    fee?: number | StdFee | "auto";
+    memo?: string;
+    funds?: Coin[];
+  };
+}
+export function useDutchAuctionLaunchpadCreateAuctionMutation(options?: Omit<UseMutationOptions<ExecuteResult, Error, DutchAuctionLaunchpadCreateAuctionMutation>, "mutationFn">) {
+  return useMutation<ExecuteResult, Error, DutchAuctionLaunchpadCreateAuctionMutation>(({
+    client,
+    msg,
+    args: {
+      fee,
+      memo,
+      funds
+    } = {}
+  }) => client.createAuction(msg, fee, memo, funds), options);
 }
