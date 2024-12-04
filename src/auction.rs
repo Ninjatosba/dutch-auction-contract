@@ -102,8 +102,8 @@ impl Auction {
     }
 
     pub fn calculate_price(&self, now: Timestamp) -> Decimal {
-        let total_duration = self.end_time.minus_nanos(self.start_time.nanos()).nanos() as f64;
-        let time_passed = now.minus_nanos(self.start_time.nanos()).nanos() as f64;
+        let total_duration = self.end_time.minus_nanos(self.start_time.nanos()).nanos();
+        let time_passed = now.minus_nanos(self.start_time.nanos()).nanos();
         let price_diff = self.starting_price - self.end_price;
         let price_diff = price_diff
             .checked_mul(Decimal::from_ratio(

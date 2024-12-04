@@ -164,7 +164,7 @@ fn execute_bid(
         .load(deps.storage, auction_id)
         .map_err(|_| ContractError::AuctionNotFound {})?;
 
-    if auction.is_active(env.block.time) {
+    if !auction.is_active(env.block.time) {
         return Err(ContractError::AuctionNotActive {});
     }
 
