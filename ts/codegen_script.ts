@@ -18,10 +18,10 @@ codegen({
     },
     reactQuery: {
       enabled: true,
-      optionalClient: false,
-      version: "v3",
-      mutations: false,
-      queryKeys: false,
+      optionalClient: true,
+      version: "v4",
+      mutations: true,
+      queryKeys: true,
     },
     recoil: {
       enabled: false,
