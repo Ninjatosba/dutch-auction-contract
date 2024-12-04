@@ -9,8 +9,8 @@ const deployDutchAuction = async () => {
     let context = new Context;
     await context.initialize();
     await context.instantiateDutchAuctionLaunchpad();
-    let startTime = context.getNanoTimestamp(10);
-    let endTime = context.getNanoTimestamp(200);
+    let startTime = context.getNanoTimestamp(3);
+    let endTime = context.getNanoTimestamp(100);
     let offeredAsset = {
         denom: chainConfig.denom,
         amount: '1000'
@@ -26,7 +26,8 @@ const deployDutchAuction = async () => {
         startTime,
         endTime,
     );
-
+    // Wait for 20 seconds
+    await new Promise((resolve) => setTimeout(resolve, 20000));
     await context.bidDutchAuction(1, '1000');
 }
 
