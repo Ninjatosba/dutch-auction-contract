@@ -1,85 +1,95 @@
-# CosmWasm Starter Pack
+## Dutch Auction Launchpad (CosmWasm)
 
-This is a template to build smart contracts in Rust to run inside a
-[Cosmos SDK](https://github.com/cosmos/cosmos-sdk) module on all chains that enable it.
-To understand the framework better, please read the overview in the
-[cosmwasm repo](https://github.com/CosmWasm/cosmwasm/blob/master/README.md),
-and dig into the [cosmwasm docs](https://www.cosmwasm.com).
-This assumes you understand the theory and just want to get coding.
+Smart contract and tooling for creating and running Dutch auctions on Cosmos chains.
 
-## Creating a new repo from template
+### Context
+- Focused on Real-World Assets (RWAs) auction and token sale use cases.
+- Built during a Mantra blockchain CosmWasm workshop (Dukong testnet).
+- A mock frontend was used for demos; this repo contains the contract and scripts.
+- You can find the frontend here [here](https://dutch-auction-webapp.vercel.app/) Implementation is not complete. So frontend is for demo purposes only.
 
-Assuming you have a recent version of Rust and Cargo installed
-(via [rustup](https://rustup.rs/)),
-then the following should get you a new repo to start a contract:
+### What it does
+- Sellers create auctions for a specific `offered_asset` with a price that linearly decreases from `starting_price` to `end_price` between `start_time` and `end_time`.
+- Bidders pay in `in_denom` and receive the corresponding amount of the offered asset at the current price.
+- Admin can update parameters like fees, accepted denoms, and timing constraints.
 
-Install [cargo-generate](https://github.com/ashleygwilliams/cargo-generate) and cargo-run-script.
-Unless you did that before, run this line now:
+### Contract interface (abridged)
+- **InstantiateMsg**: `auction_creation_fee: Coin`, `admin: String`, `min_seconds_until_auction_start: u64`, `max_auction_duration: u64`, `accepted_denoms: string[]`.
+- **ExecuteMsg**:
+  - `CreateAuction { offered_asset, in_denom, starting_price, end_price, start_time, end_time }`
+  - `Bid { auction_id }` (send funds in `in_denom`)
+  - `ChangeParams { ... }` (admin only)
+  - `CancelAuction { auction_id }` (before start, creator only)
+- **QueryMsg**:
+  - `Auctions { start_after?, limit? }` → `[(u8, Auction)]`
+  - `Auction { auction_id }` → `Auction`
+  - `Params {}` → `Params`
 
-```sh
-cargo install cargo-generate --features vendored-openssl
-cargo install cargo-run-script
+## Prerequisites
+- Rust toolchain with `wasm32-unknown-unknown` target
+- Docker (for optimizer image)
+- Node.js >= 16 and Yarn (for TypeScript tooling and deployment scripts)
+
+## Build and optimize
+```bash
+# Debug build
+cargo build --target wasm32-unknown-unknown
+
+# Optimize WASM (outputs to ./artifacts)
+./scripts/optimize.sh
 ```
 
-Now, use it to create your new contract.
-Go to the folder in which you want to place it and run:
+## Generate JSON schema and TypeScript clients
+```bash
+# Generates ./schema via rust binary and then TS types in ./ts/types
+./scripts/schema.sh
 
-**Latest**
-
-```sh
-cargo generate --git https://github.com/CosmWasm/cw-template.git --name PROJECT_NAME
+# Or run TS codegen directly (expects ./schema to exist)
+cd ts && yarn install && yarn generate-ts
 ```
 
-For cloning minimal code repo:
+## Deploy and try it (example script)
+The `deployment-scripts` package uploads, instantiates, creates an example auction, waits, then bids.
 
-```sh
-cargo generate --git https://github.com/CosmWasm/cw-template.git --name PROJECT_NAME -d minimal=true
+```bash
+cd deployment-scripts
+yarn install
+
+# Configure chain details in configs/chain_config.json (provided example points to Mantra Dukong)
+
+# Provide test accounts the script can use
+# Create configs/test_accounts.ts with at least an admin account
 ```
 
-You will now have a new folder called `PROJECT_NAME` (I hope you changed that to something else)
-containing a simple working contract and build system that you can customize.
-
-## Create a Repo
-
-After generating, you have a initialized local git repo, but no commits, and no remote.
-Go to a server (eg. github) and create a new upstream repo (called `YOUR-GIT-URL` below).
-Then run the following:
-
-```sh
-# this is needed to create a valid Cargo.lock file (see below)
-cargo check
-git branch -M main
-git add .
-git commit -m 'Initial Commit'
-git remote add origin YOUR-GIT-URL
-git push -u origin main
+```ts
+// deployment-scripts/configs/test_accounts.ts
+export const TestAccounts = [
+  {
+    name: "admin",
+    mnemonic: "<mnemonic>",
+    address: "<bech32>"
+  }
+]
 ```
 
-## CI Support
+```bash
+# Ensure optimized artifact exists at ../artifacts/dutch_auction_launchpad.wasm
+ls ../artifacts
 
-We have template configurations for both [GitHub Actions](.github/workflows/Basic.yml)
-and [Circle CI](.circleci/config.yml) in the generated project, so you can
-get up and running with CI right away.
+# Upload, instantiate, create an auction and bid
+yarn deploy-dutch-auction
 
-One note is that the CI runs all `cargo` commands
-with `--locked` to ensure it uses the exact same versions as you have locally. This also means
-you must have an up-to-date `Cargo.lock` file, which is not auto-generated.
-The first time you set up the project (or after adding any dep), you should ensure the
-`Cargo.lock` file is updated, so the CI will test properly. This can be done simply by
-running `cargo check` or `cargo unit-test`.
+# To force re-uploading code IDs
+yarn deploy-dutch-auction -- -store-code
+```
 
-## Using your project
+Logs are written to a rotating `test.log` file in `deployment-scripts`.
 
-Once you have your custom repo, you should check out [Developing](./Developing.md) to explain
-more on how to run tests and develop code. Or go through the
-[online tutorial](https://docs.cosmwasm.com/) to get a better feel
-of how to develop.
+## Project layout
+- `src/` Rust contract (messages in `msg.rs`, logic in `contract.rs`, domain in `auction.rs`)
+- `scripts/` helper scripts for schema and optimization
+- `ts/` generated TypeScript clients and codegen driver
+- `deployment-scripts/` upload/instantiate/invoke example using CosmJS
 
-[Publishing](./Publishing.md) contains useful information on how to publish your contract
-to the world, once you are ready to deploy it on a running blockchain. And
-[Importing](./Importing.md) contains information about pulling in other contracts or crates
-that have been published.
-
-Please replace this README file with information about your specific project. You can keep
-the `Developing.md` and `Publishing.md` files as useful references, but please set some
-proper description in the README.
+## License
+MIT
